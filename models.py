@@ -30,7 +30,20 @@ class User(db.Model):
     @classmethod
     def is_valid_pwd(cls, username, pwd):
         user = User.query.get(username)
-        if bcrypt.check_password_hash(user.password, pwd):
-            return True
-        else:
-            return False
+        return bcrypt.check_password_hash(user.password, pwd)
+
+    feedbacks = db.relationship('Feedback')
+
+class Feedback(db.Model):
+
+    __tablename__ = 'feedbacks'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    title = db.Column(db.String(100), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    username = db.Column(db.Text,
+                         db.ForeignKey('users.username'),
+                         nullable=False)
+    
+    user = db.relationship('User')
+
