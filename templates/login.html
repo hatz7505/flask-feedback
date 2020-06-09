@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<h1>Log in!</h1>
+{% with messages = get_flashed_messages() %}
+  {% if messages %}
+    {% for message in messages %}
+      <p class="alert alert-danger">{{ message }}</p>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
+<form id="login-user" method="POST">
+  {% for field in form %}
+  <p>
+    {{ field.label }}
+    {{ field }}
+
+    {% for error in field.errors %}
+    {{ error }}
+    {% endfor %}
+  </p>
+  {% endfor %}
+  <button type="submit" class="btn btn-primary">Log in!</button>
+
+  {% endblock %}
