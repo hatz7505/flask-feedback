@@ -1,6 +1,6 @@
 """Flask app for Flask-Feedback"""
 
-from flask import Flask, request, render_template, redirect, flash, session
+from flask import Flask, render_template, redirect, flash, session
 from models import db, connect_db, User, Feedback
 from forms import RegisterForm, LoginForm, FeedbackForm
 
@@ -28,8 +28,12 @@ def redirect_to_register():
 
 @app.route('/register')
 def show_register_form():
-    form = RegisterForm()
-    return render_template('register.html', form=form)
+    if 'username' in session:
+        username = session['username']
+        return redirect(f'/secret/users/{username}')
+    else:
+        form = RegisterForm()
+        return render_template('register.html', form=form)
 
 
 @app.route('/register', methods=["POST"])
@@ -55,6 +59,7 @@ def register_user():
         flash(f"Username {username} already taken")
         return render_template('register.html', form=form)
 
+
 @app.route('/login')
 def show_login_form():
     form = LoginForm()
@@ -77,10 +82,12 @@ def login_user():
         flash(f"Incorrect username or password")
         return render_template('login.html', form=form)
 
+
 @app.route('/logout')
 def logout_user():
     session.pop('username')
     return redirect('/register')
+
 
 @app.route('/secret/users/<username>')
 def show_user(username):
@@ -91,22 +98,31 @@ def show_user(username):
         user = User.query.get(username)
         return render_template('secret.html', user=user)
 
+
 @app.route('/users/<username>/feedback/add', methods=["GET", "POST"])
 def add_feedback(username):
-    form = FeedbackForm()
-    if 'username' in session:
-        if form.validate_on_submit():
-            title = form.title.data
-            content = form.content.data
-            feedback = Feedback(title=title, content=content, username=username)
-            db.session.add(feedback)
-            db.session.commit()
-            return redirect(f'/secret/users/{username}')
+    name = session['username']
+    username = User.query.get(username).username
+
+    if name == username:
+        form = FeedbackForm()
+        if 'username' in session:
+            if form.validate_on_submit():
+                title = form.title.data
+                content = form.content.data
+                feedback = Feedback(title=title, content=content, username=username)
+                db.session.add(feedback)
+                db.session.commit()
+                return redirect(f'/secret/users/{username}')
+            else:
+                return render_template('feedback.html', form=form)
         else:
-            return render_template('feedback.html', form=form)
+            flash('Please login')
+            return redirect('/login')
     else:
-        flash('Please login')
-        return redirect('/login')
+        flash('What are you trying to do??????')
+        return redirect(f'/secret/users/{name}')
+
 
 @app.route('/feedback/<int:id>/update/')
 def update_feedback_form(id):
@@ -118,22 +134,60 @@ def update_feedback_form(id):
     form = FeedbackForm(obj=user_feedback)
 
     if name == feedback_author:
-        return render_template('update_feedback.html',form=form)
+        return render_template('update_feedback.html',form=form, feedback=user_feedback)
     else:
         flash('What are you trying to do??????')
         return redirect(f'/secret/users/{name}')
 
+
 @app.route('/feedback/<int:id>/update/', methods=["POST"])
 def update_feedback(id):
     feedback = Feedback.query.get(id)
+    feedback_author = Feedback.query.get(id).user.username
     name = session['username']
     form = FeedbackForm()
+    if name == feedback_author:
+        if form.validate_on_submit():
+            feedback.title = form.title.data
+            feedback.content = form.content.data
+            db.session.commit()
+            flash('Feedback was added! Thank you')
+            return redirect(f'/secret/users/{name}')
+        else:
+            return redirect('/')
+    else:
+        flash('What are you trying to do??????')
+        return redirect(f'/secret/users/{name}')
 
-    if form.validate_on_submit():
-        feedback.title = form.title.data
-        feedback.content = form.content.data
+
+@app.route('/feedback/<int:id>/delete')
+def delete_feedback(id):
+    name = session['username']
+    feedback_author = Feedback.query.get(id).user.username
+    user_feedback = Feedback.query.get(id)
+
+    if name == feedback_author:
+        db.session.delete(user_feedback)
         db.session.commit()
-        flash('Feedback was added! Thank you')
+        flash('Feedback Deleted.. BYE')
         return redirect(f'/secret/users/{name}')
     else:
-        return redirect('/')
+        flash('What are you trying to do??????')
+        return redirect(f'/secret/users/{name}')
+
+
+@app.route('/users/<username>/delete')
+def delete_user(username):
+    name = session['username']
+    username = User.query.get(username).username
+    user = User.query.get(username)
+
+    if name == username:
+        db.session.delete(user)
+        db.session.commit()
+        session.pop('username')
+        flash(f'User {username} Deleted.. BYE')
+        return redirect('/register')
+    else:
+        flash('What are you trying to do??????')
+        return redirect(f'/secret/users/{name}')

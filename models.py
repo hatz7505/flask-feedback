@@ -20,19 +20,20 @@ class User(db.Model):
     first_name = db.Column(db.String(30), nullable=False)
     last_name = db.Column(db.String(30), nullable=False)
 
+    feedbacks = db.relationship('Feedback', cascade="all,delete")
+
     @classmethod
     def is_valid_username(cls, username, pwd):
         if not User.query.get(username):
             return bcrypt.generate_password_hash(pwd).decode("utf8")
         else:
             return False
-    
+
     @classmethod
     def is_valid_pwd(cls, username, pwd):
         user = User.query.get(username)
         return bcrypt.check_password_hash(user.password, pwd)
 
-    feedbacks = db.relationship('Feedback')
 
 class Feedback(db.Model):
 
