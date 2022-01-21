@@ -9,7 +9,7 @@ Flask==1.1.2
 Flask-Bcrypt==0.7.1
 Flask-SQLAlchemy==2.4.3
 Flask-WTF==0.14.3
-ipython==7.15.0
+ipython==7.16.3
 ipython-genutils==0.2.0
 is-disposable-email==1.0.0
 itsdangerous==1.1.0
